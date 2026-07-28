@@ -13,13 +13,14 @@ keep track of what work inspires you, process artifacts, and what you made <3
   script tag. your portfolio's portfolio.
 
 project statuses:
-⏲️ `fermenting` inspiration is inspirationing
 
-🧑‍🍳 `in the oven` still cooking...
-
-🍪 `fully baked`  done + ready to show the world!
-
-🗑️ `flat` (i'll come back to it... someday...)
+  ⏲️ `fermenting` inspiration is inspirationing
+  
+  🧑‍🍳 `in the oven` still cooking...
+  
+  🍪 `fully baked`  done + ready to show the world!
+  
+  🗑️ `flat` (i'll come back to it... someday...)
 
 ## reading the code
 
