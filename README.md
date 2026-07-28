@@ -12,8 +12,11 @@ keep track of what work inspires you, process artifacts, and what you made <3
 - **embeddable** — your public board drops into any portfolio with one
   script tag. your portfolio's portfolio.
 
-status vocabulary: `fermenting → in the oven → fully baked` (and
-`flat`, said lovingly).
+project statuses:
+⏲️ `fermenting` inspiration is inspirationing
+🧑‍🍳 `in the oven` still cooking...
+🍪 `fully baked`  done + ready to show the world!
+🗑️ `flat` (i'll come back to it... someday...)
 
 ## reading the code
 
