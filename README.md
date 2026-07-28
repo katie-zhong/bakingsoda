@@ -1,8 +1,7 @@
-# bakingsoda ●
+# bakingsoda
 
-a provenance board for makers. it records the arrow between what
-inspired you and what you shipped — pinterest owns the input, github
-owns the output, bakingsoda owns the arrow.
+a shareable project board for makers. 
+keep track of what work inspires you, process artifacts, and what you made <3
 
 - **paste anything** — a tweet, a pin, a repo, a pdf — and it lands on
   the counter, unfurled into a card
