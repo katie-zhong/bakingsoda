@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bakingsoda — demo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root{
+    --paper:#f4f4f6;
+    --ink:#181819;
+    --mut:#525259;
+    --fnt:#93939c;
+    --bor:#e4e4e8;
+    --white:#ffffff;
+    --accent:#ff4d0f;
+    --accent-soft:#ffe6dc;
+    --teal:#2aa19a;
+    --lime:#84cc16;
+    --amb:#f5a623;
+    --shadow: 0 6px 20px rgba(20,20,26,0.06);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:'Inter',sans-serif; font-size:14px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .syne{ font-family:'Syne',sans-serif; }
+  .mono{ font-family:'JetBrains Mono',monospace; }
+  button{ font-family:inherit; cursor:pointer; border:none; background:none; }
+  a{ text-decoration:none; color:inherit; }
+
+  /* ---------- shell ---------- */
+  .app{ display:flex; min-height:100vh; }
+  .sidebar{
+    width:230px; flex-shrink:0; background:rgba(255,255,255,0.65);
+    backdrop-filter: blur(20px); border-right:1px solid var(--bor);
+    padding:26px 18px; display:flex; flex-direction:column; gap:22px;
+    position:sticky; top:0; height:100vh;
+  }
+  .brand{ display:flex; align-items:center; gap:5px; font-size:19px; font-weight:800; letter-spacing:-0.5px;}
+  .brand .dot{ width:6px; height:6px; border-radius:50%; background:var(--accent); }
+  .navgroup{ display:flex; flex-direction:column; gap:2px; }
+  .navlabel{ font-size:10.5px; color:var(--fnt); letter-spacing:1.2px; text-transform:uppercase; padding:0 10px 6px; }
+  .navrow{ display:flex; align-items:center; gap:8px; padding:7px 10px; border-radius:8px; font-weight:500; color:var(--ink); }
+  .navrow.active{ background:rgba(24,24,25,0.06); font-weight:600; }
+  .navrow .count{ margin-left:auto; color:var(--fnt); font-size:12px; font-weight:400;}
+  .navrow .swatch{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .navrow small{ margin-left:auto; color:var(--fnt); font-weight:400; font-size:11px;}
+  .sidebar .spacer{ flex:1; }
+  .profile-row{ display:flex; align-items:center; gap:8px; padding:7px 10px; }
+  .avatar{ width:18px; height:18px; border-radius:50%; background:linear-gradient(135deg,#8bc0b7,#3d6a63); flex-shrink:0;}
+  .pubpage{ padding:0 10px; font-size:12px; font-weight:500; color:var(--accent);}
+
+  main{ flex:1; min-width:0; position:relative; overflow-x:hidden;}
+  .ambient{ position:absolute; border-radius:50%; filter:blur(90px); z-index:0; pointer-events:none;}
+
+  .view{ display:none; position:relative; z-index:1; }
+  .view.active{ display:block; }
+
+  /* ---------- BOARD ---------- */
+  #view-board{ padding:34px 40px 60px; }
+  .topbar{ display:flex; gap:12px; align-items:center; margin-bottom:18px;}
+  .searchbar{
+    flex:1; display:flex; align-items:center; gap:10px; padding:11px 8px 11px 18px;
+    background:rgba(255,255,255,0.7); backdrop-filter:blur(20px); border:1px solid var(--bor);
+    border-radius:24px;
+  }
+  .searchbar input{
+    border:none; background:none; outline:none; flex:1; font-family:inherit; font-size:13px; color:var(--ink);
+  }
+  .searchbar input::placeholder{ color:var(--mut); }
+  .kbd{ background:rgba(24,24,25,0.05); border-radius:6px; padding:4px 8px; font-size:11px; font-weight:500; color:var(--fnt);}
+  .sortbtn{ display:flex; align-items:center; gap:6px; padding:11px 16px; background:var(--white); border:1px solid var(--bor); border-radius:22px; font-weight:500; font-size:13px;}
+  .chips{ display:flex; gap:8px; align-items:center; margin-bottom:26px; flex-wrap:wrap;}
+  .chip{ padding:7px 14px; border-radius:16px; font-size:12px; font-weight:500; border:1px solid var(--bor); background:var(--white); color:var(--mut); transition:.15s;}
+  .chip.active{ background:var(--ink); color:var(--white); border-color:var(--ink); }
+  .chip:hover:not(.active){ border-color:#c8c8ce; }
+  .divider{ width:1px; height:16px; background:var(--bor); }
+  .tagchip{ display:flex; align-items:center; gap:8px; padding:7px 10px 7px 14px; border-radius:16px; font-size:12px; font-weight:500; background:var(--accent-soft); color:var(--accent); }
+  .tagchip button{ color:var(--accent); font-size:10px; }
+
+  .masonry{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; align-items:start; }
+  .card{ background:var(--white); border:1px solid var(--bor); border-radius:14px; padding:16px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px; cursor:pointer; transition:.15s; }
+  .card:hover{ transform:translateY(-2px); box-shadow:0 10px 26px rgba(20,20,26,0.09); }
+  .card .rowline{ display:flex; align-items:center; gap:8px; }
+  .card .avatar-sm{ width:20px; height:20px; border-radius:50%; background:#dcdce0; flex-shrink:0;}
+  .card .who{ font-weight:600; font-size:12px; }
+  .card .src{ color:var(--fnt); font-size:11px; }
+  .card .body-text{ font-size:13.5px; line-height:1.5; color:var(--ink); }
+  .card img.thumb, .card .thumb{ width:100%; height:150px; border-radius:10px; object-fit:cover; background:linear-gradient(160deg,#cfe0dc,#7fada4);}
+  .card .thumb.dark{ background:linear-gradient(160deg,#242730,#111216); position:relative;}
+  .card .thumb.dark::after{ content:'▶'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.85); font-size:20px;}
+  .card .caption{ font-size:12px; font-weight:500; color:var(--ink);}
+  .card .caption span{ color:var(--fnt); font-weight:400;}
+  .card .footer{ display:flex; align-items:center; gap:8px; margin-top:2px;}
+  .projchip{ display:flex; align-items:center; gap:6px; padding:5px 10px; border-radius:12px; background:rgba(24,24,25,0.045); font-size:11px; font-weight:500; color:var(--mut);}
+  .projchip .swatch{ width:6px; height:6px; border-radius:50%;}
+  .ghostchip{ padding:5px 10px; border-radius:12px; border:1px solid var(--bor); font-size:11px; font-weight:500; color:var(--fnt);}
+  .card .footer .meta-right{ margin-left:auto; color:var(--fnt); font-size:11px; }
+  .paste-target{ border:1.5px dashed #c4c4ca; border-radius:14px; padding:28px 16px; display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .paste-target b{ font-weight:500; font-size:13px; color:var(--mut); }
+  .paste-target span{ font-size:11px; color:var(--fnt); }
+  .paste-target:hover{ border-color:var(--accent); background:var(--accent-soft); }
+  .fig-preview{ height:96px; border-radius:10px; background:#f0f0f2; position:relative; overflow:hidden;}
+  .fig-preview .m1{ position:absolute; left:14px; top:14px; width:60px; height:44px; border-radius:4px; background:#fff; border:1px solid var(--bor);}
+  .fig-preview .m2{ position:absolute; left:82px; top:14px; width:44px; height:44px; border-radius:50%; background:#cce0da;}
+  .fig-preview .m3{ position:absolute; left:136px; top:20px; width:100px; height:8px; border-radius:3px; background:var(--bor);}
+  .fig-preview .m4{ position:absolute; left:136px; top:36px; width:70px; height:8px; border-radius:3px; background:var(--bor);}
+
+  /* ---------- RECIPE VIEW ---------- */
+  #view-recipe{ padding:34px 56px 60px; }
+  .breadcrumb{ font-size:13px; color:var(--fnt); font-weight:500; margin-bottom:26px; display:inline-block;}
+  .breadcrumb:hover{ color:var(--ink); }
+  .recipe-head{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px; flex-wrap:wrap; gap:16px;}
+  .recipe-title{ font-size:42px; font-weight:800; letter-spacing:-1.5px; margin:0 0 12px; }
+  .status-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .statuspill{ display:flex; align-items:center; gap:6px; padding:6px 12px; border-radius:14px; border:1px solid var(--bor); background:var(--white); font-weight:500; font-size:12px; position:relative;}
+  .statuspill .swatch{ width:7px; height:7px; border-radius:50%; background:var(--accent);}
+  .datestext{ font-size:13px; color:var(--mut);}
+  .datestext.sub{ color:var(--fnt); }
+  .vistoggle{ display:flex; align-items:center; gap:10px; }
+  .switch{ width:44px; height:26px; border-radius:13px; background:var(--accent); position:relative; }
+  .switch .knob{ width:20px; height:20px; border-radius:50%; background:#fff; position:absolute; right:3px; top:3px;}
+  .switch.off{ background:#d8d8dc; }
+  .switch.off .knob{ right:auto; left:3px; }
+
+  .hero-media{ width:100%; height:280px; border-radius:16px; margin-bottom:22px; position:relative; overflow:hidden;
+    background:linear-gradient(155deg,#cfe0dc 0%,#5c8b82 100%); box-shadow:var(--shadow); display:flex; align-items:flex-end; }
+  .hero-media .tag{ margin:16px; padding:6px 12px; border-radius:12px; background:rgba(255,255,255,0.85); backdrop-filter:blur(6px); font-size:11px; font-weight:600; color:var(--ink);}
+
+  .ingredients{ background:var(--white); border:1px solid var(--bor); border-radius:14px; box-shadow:var(--shadow); padding:18px 22px; margin-bottom:26px;}
+  .ing-head{ display:flex; align-items:center; gap:8px; margin-bottom:12px; flex-wrap:wrap;}
+  .ing-head .title{ font-weight:600; font-size:13px;}
+  .ing-head .sub{ color:var(--fnt); font-size:11.5px; margin-left:auto;}
+  .keepbtn{ padding:6px 12px; border-radius:14px; background:var(--accent-soft); color:var(--accent); font-size:11.5px; font-weight:600;}
+  .rejbtn{ padding:6px 10px; color:var(--fnt); font-size:12px;}
+  .ing-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .pillchip{ padding:6px 12px; border-radius:14px; border:1px solid var(--bor); background:var(--white); font-size:12px; font-weight:500; color:var(--ink);}
+  .swatchdot{ width:18px; height:18px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px var(--bor); margin-left:-8px;}
+  .swatchdot:first-child{ margin-left:0;}
+  .swatch-note{ font-size:11px; color:var(--fnt); margin-left:4px;}
+
+  .recipe-grid{ display:grid; grid-template-columns:1.05fr 1.4fr; gap:24px; align-items:start;}
+  .insp-head{ display:flex; align-items:center; gap:10px; margin-bottom:14px;}
+  .insp-head .title{ font-weight:600; font-size:14px;}
+  .arrangebtn{ margin-left:auto; display:flex; align-items:center; gap:6px; padding:5px 10px; border-radius:12px; border:1px solid var(--bor); background:var(--white); font-size:11px; font-weight:500; color:var(--mut);}
+  .mini-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .mini-card{ background:var(--white); border:1px solid var(--bor); border-radius:12px; box-shadow:var(--shadow); padding:12px 14px; display:flex; flex-direction:column; gap:8px; height:110px;}
+  .mini-card .lbl{ font-size:10.5px; color:var(--fnt); font-weight:500;}
+  .mini-card .txt{ font-size:11.5px; line-height:1.45; color:var(--ink);}
+  .mini-card .mimg{ flex:1; border-radius:8px; background:linear-gradient(160deg,#cfe0dc,#7fada4);}
+  .mini-card .mimg.dark{ background:linear-gradient(160deg,#232630,#101116);}
+  .moretext{ font-size:12px; color:var(--fnt); font-weight:500; margin-top:8px; display:block;}
+
+  .himi-card{ background:var(--white); border:1px solid var(--bor); border-radius:14px; box-shadow:var(--shadow); padding:20px 24px;}
+  .himi-head{ display:flex; align-items:center; gap:8px; margin-bottom:12px;}
+  .himi-head .title{ font-weight:600; font-size:14px;}
+  .draftbtn{ margin-left:auto; padding:7px 12px; border-radius:14px; background:var(--accent-soft); color:var(--accent); font-size:11.5px; font-weight:600;}
+  .himi-intro{ font-size:13px; line-height:1.6; color:var(--mut); margin-bottom:14px;}
+  .himi-line{ height:1px; background:var(--bor); margin-bottom:14px;}
+  .tl-item{ display:flex; gap:14px; margin-bottom:12px; align-items:baseline;}
+  .tl-item .date{ font-size:11.5px; color:var(--fnt); font-weight:500; width:44px; flex-shrink:0;}
+  .tl-item .text{ font-size:13px; line-height:1.55; color:var(--ink);}
+  .tl-item .text a{ color:var(--accent); font-weight:500;}
+
+  .ow-title{ font-weight:600; font-size:14px; margin:30px 0 14px;}
+  .ow-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+  .ow-card{ background:var(--white); border:1px solid var(--bor); border-radius:14px; box-shadow:var(--shadow); padding:14px 16px; display:flex; flex-direction:column; gap:6px;}
+  .ow-card .head{ display:flex; align-items:center; gap:6px;}
+  .ow-card .head b{ font-size:12.5px; font-weight:600;}
+  .ow-card .head .src{ font-size:10.5px; color:var(--fnt);}
+  .ow-card p{ margin:0; font-size:11.5px; color:var(--mut); line-height:1.5;}
+
+  /* ---------- PROFILE ---------- */
+  #view-profile{ padding:60px 70px; }
+  .profile-grid{ display:grid; grid-template-columns:420px 1fr; gap:40px; align-items:start; }
+  .p-avatar{ width:64px; height:64px; border-radius:50%; background:linear-gradient(135deg,#8bc0b7,#3d6a63); margin-bottom:18px;}
+  .p-name{ font-size:44px; font-weight:800; letter-spacing:-1.5px; margin:0 0 12px;}
+  .p-bio{ font-size:15px; line-height:1.6; color:var(--mut); margin-bottom:14px;}
+  .p-links{ display:flex; gap:8px; font-size:13px; color:var(--mut); font-weight:500; margin-bottom:30px;}
+  .p-links .accentlink{ color:var(--accent);}
+  .embed-label{ font-weight:600; font-size:13px; margin-bottom:10px;}
+  .embed-box{ display:flex; align-items:center; gap:12px; background:var(--ink); border-radius:12px; padding:15px 10px 15px 18px; box-shadow:var(--shadow); margin-bottom:10px;}
+  .embed-box code{ flex:1; color:#eaeaee; font-size:12px; overflow-x:auto; white-space:nowrap; }
+  .copybtn{ padding:8px 14px; border-radius:14px; background:var(--accent); color:#fff; font-size:12px; font-weight:600; flex-shrink:0;}
+  .embed-cap{ font-size:12px; color:var(--fnt); line-height:1.5;}
+  .madewith{ font-size:12px; color:var(--fnt); margin-top:60px;}
+  .spotlights{ display:flex; flex-direction:column; gap:24px;}
+  .spot-card{ background:var(--white); border:1px solid var(--bor); border-radius:16px; box-shadow:var(--shadow); overflow:hidden; cursor:pointer; transition:.15s;}
+  .spot-card:hover{ transform:translateY(-2px); box-shadow:0 12px 30px rgba(20,20,26,0.10);}
+  .spot-card:nth-child(2){ margin-left:80px;}
+  .spot-img{ height:170px; background:linear-gradient(160deg,#c7dcd6,#7fada4);}
+  .spot-img.two{ background:linear-gradient(160deg,#d9e4c8,#a1bd7f);}
+  .spot-body{ padding:18px 22px;}
+  .spot-row{ display:flex; align-items:center; gap:10px; margin-bottom:8px;}
+  .spot-row .name{ font-size:20px; font-weight:700; letter-spacing:-0.5px; font-family:'Syne',sans-serif;}
+  .spot-status{ margin-left:auto; display:flex; align-items:center; gap:6px; padding:5px 10px; border-radius:12px; border:1px solid var(--bor); font-size:11px; font-weight:500;}
+  .spot-status .swatch{ width:7px; height:7px; border-radius:50%;}
+  .spot-body p{ margin:0 0 10px; font-size:13px; color:var(--mut); line-height:1.5;}
+  .spot-pal{ display:flex; align-items:center; gap:6px;}
+  .spot-pal .arrow{ font-size:11px; color:var(--fnt); margin-left:2px;}
+
+  /* toast */
+  .toast{ position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--ink); color:#fff; padding:11px 20px; border-radius:24px; font-size:13px; font-weight:500; opacity:0; pointer-events:none; transition:.25s; z-index:50; box-shadow:0 10px 26px rgba(0,0,0,0.25);}
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ============ SIDEBAR ============ -->
+  <div class="sidebar">
+    <div class="brand">bakingsoda<span class="dot"></span></div>
+    <div class="navgroup">
+      <div class="navrow active" data-nav="board" onclick="showView('board', this)">the counter <span class="count">12</span></div>
+      <div class="navrow" onclick="showView('board', this)">everything <span class="count">48</span></div>
+    </div>
+    <div class="navgroup">
+      <div class="navlabel">projects</div>
+      <div class="navrow" onclick="showView('recipe', this)"><span class="swatch" style="background:var(--teal)"></span> uncorked <small>in the oven</small></div>
+      <div class="navrow" onclick="showView('recipe', this)"><span class="swatch" style="background:var(--lime)"></span> mixtrail <small>fully baked</small></div>
+      <div class="navrow" onclick="showView('recipe', this)"><span class="swatch" style="background:var(--amb)"></span> portfolio v3 <small>fermenting</small></div>
+      <div class="navrow" style="color:var(--fnt);">+ new project</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="profile-row"><span class="avatar"></span> katie</div>
+    <a class="pubpage" onclick="showView('profile', this)">your public page →</a>
+  </div>
+
+  <!-- ============ MAIN ============ -->
+  <main>
+    <div class="ambient" style="width:520px;height:520px;left:-160px;top:-140px;background:rgba(255,77,15,0.07);"></div>
+    <div class="ambient" style="width:600px;height:600px;right:-200px;bottom:0;background:rgba(42,161,154,0.06);"></div>
+
+    <!-- ---------------- BOARD ---------------- -->
+    <section id="view-board" class="view active">
+      <div class="topbar">
+        <div class="searchbar">
+          <input id="pasteInput" placeholder="paste anything — a tweet, a pin, a repo, a pdf" onkeydown="if(event.key==='Enter')pasteLink()">
+          <span class="kbd">⌘V</span>
+        </div>
+        <button class="sortbtn">newest ⌄</button>
+      </div>
+      <div class="chips">
+        <button class="chip active">everything</button>
+        <button class="chip">twitter</button>
+        <button class="chip">pinterest</button>
+        <button class="chip">youtube</button>
+        <button class="chip">papers</button>
+        <button class="chip">figma</button>
+        <div class="divider"></div>
+        <span class="tagchip">#typography <button>✕</button></span>
+      </div>
+
+      <div class="masonry" id="masonry">
+        <div class="col">
+          <div class="card" onclick="showView('recipe')">
+            <div class="rowline"><span class="avatar-sm"></span><span class="who">@sailorhg</span><span class="src">· twitter</span></div>
+            <div class="body-text">hardware should feel like toys. the joy IS the interface — if it isn't fun to touch, nobody learns what it can do</div>
+            <div class="footer"><span class="projchip"><span class="swatch" style="background:var(--teal)"></span>uncorked</span><span class="meta-right">2d ago</span></div>
+          </div>
+          <div class="card" onclick="showView('recipe')">
+            <div class="thumb"></div>
+            <div class="caption">risograph zine spreads <span>· pinterest</span></div>
+            <div class="footer"><span class="projchip"><span class="swatch" style="background:var(--lime)"></span>mixtrail</span><span class="meta-right">1w</span></div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card">
+            <span class="src">pdf · acm digital archive</span>
+            <div class="body-text" style="font-weight:600;">Sketchpad: a man-machine graphical communication system</div>
+            <div class="footer"><span class="ghostchip">on the counter</span><span class="meta-right">3d</span></div>
+          </div>
+          <div class="card">
+            <div class="thumb dark"></div>
+            <div class="caption">the design engineer's toolkit <span>· youtube</span></div>
+            <div class="footer"><span class="projchip"><span class="swatch" style="background:var(--amb)"></span>portfolio v3</span><span class="ghostchip">private</span><span class="meta-right">5d</span></div>
+          </div>
+          <div class="card">
+            <div class="rowline"><span class="avatar-sm" style="background:#e8d9cf;"></span><span class="who">@kellianderson</span><span class="src">· twitter</span></div>
+            <div class="body-text">paper is a machine you can print</div>
+            <div class="footer"><span class="projchip"><span class="swatch" style="background:var(--lime)"></span>mixtrail</span><span class="meta-right">2w</span></div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="paste-target" onclick="document.getElementById('pasteInput').focus()">
+            <b>+ paste a link</b>
+            <span>or drop a file, image, or pdf</span>
+          </div>
+          <div class="card" onclick="showView('recipe')">
+            <div class="rowline"><span class="who">seaglass-bottle.fig</span><span class="src">· figma</span></div>
+            <div class="fig-preview"><div class="m1"></div><div class="m2"></div><div class="m3"></div><div class="m4"></div></div>
+            <div class="footer"><span class="projchip"><span class="swatch" style="background:var(--teal)"></span>uncorked</span><span class="meta-right">1d</span></div>
+          </div>
+          <div class="card">
+            <span class="src">essay · are.na editorial</span>
+            <div class="body-text" style="font-weight:600;">on collecting as a creative act</div>
+            <div class="body-text" style="font-size:12px;color:var(--mut);">a collection is an argument made slowly — every saved thing is a vote for the work you want to make next.</div>
+            <div class="footer"><span class="ghostchip">on the counter</span><span class="meta-right">6h</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------- RECIPE ---------------- -->
+    <section id="view-recipe" class="view">
+      <a class="breadcrumb" onclick="showView('board')">← all projects</a>
+      <div class="recipe-head">
+        <div>
+          <h1 class="recipe-title syne">uncorked</h1>
+          <div class="status-row">
+            <span class="statuspill" id="statusPill" onclick="cycleStatus()"><span class="swatch" id="statusDot"></span><span id="statusLabel">in the oven</span></span>
+            <span class="datestext">mar 2026 → now</span>
+            <span class="datestext sub">· dates tracked automatically</span>
+          </div>
+        </div>
+        <div class="vistoggle">
+          <span style="font-weight:500;font-size:13px;">public</span>
+          <div class="switch" id="visSwitch" onclick="toggleVis()"><div class="knob"></div></div>
+        </div>
+      </div>
+
+      <div class="hero-media">
+        <span class="tag">▶ live demo · click to launch</span>
+      </div>
+
+      <div class="ingredients">
+        <div class="ing-head">
+          <span class="title">ingredients</span>
+          <span class="sub">3 auto-extracted from your files —</span>
+          <button class="keepbtn">✓ keep</button>
+          <button class="rejbtn">✕</button>
+        </div>
+        <div class="ing-row">
+          <span class="pillchip">figma</span><span class="pillchip">react</span><span class="pillchip">claude api</span><span class="pillchip">tone.js</span>
+          <span style="color:var(--fnt);">·</span>
+          <span class="pillchip">syne</span><span class="pillchip">inter</span>
+          <span style="color:var(--fnt);">·</span>
+          <span class="swatchdot" style="background:#7fb5a8;"></span><span class="swatchdot" style="background:#e8dcc4;"></span><span class="swatchdot" style="background:#dce8e6;"></span><span class="swatchdot" style="background:#3e6b63;"></span><span class="swatchdot" style="background:#b98a5c;"></span>
+          <span class="swatch-note">seaglass palette · pulled from screenshots</span>
+        </div>
+      </div>
+
+      <div class="recipe-grid">
+        <div>
+          <div class="insp-head">
+            <span class="title">inspiration · 6</span>
+            <button class="arrangebtn" onclick="toggleArrange(this)">arrange: <span class="arrangeLabel">collage</span> ⌄</button>
+          </div>
+          <div class="mini-grid">
+            <div class="mini-card"><span class="lbl">@sailorhg · twitter</span><span class="txt">hardware should feel like toys. the joy IS the interface</span></div>
+            <div class="mini-card"><div class="mimg"></div><span class="lbl">bottle-green glass · pinterest</span></div>
+            <div class="mini-card"><span class="lbl">pdf · calm technology, case study</span><span class="txt">technology should require the smallest possible amount of attention</span></div>
+            <div class="mini-card"><div class="mimg dark"></div><span class="lbl">ocean ambience, 3 hrs · youtube</span></div>
+          </div>
+          <span class="moretext">+ 2 more</span>
+        </div>
+
+        <div class="himi-card">
+          <div class="himi-head">
+            <span class="title">how i made it</span>
+            <button class="draftbtn">draft this from my timeline</button>
+          </div>
+          <p class="himi-intro">started as sixty unread twitter bookmarks and a guilty feeling. the wind-chime idea came first; everything else got built around the sound.</p>
+          <div class="himi-line"></div>
+          <div class="tl-item"><span class="date">mar 03</span><span class="text">first bottle sketch in figma — cork physics doodles</span></div>
+          <div class="tl-item"><span class="date">mar 21</span><span class="text">x bookmarks api connected, first 60 posts imported</span></div>
+          <div class="tl-item"><span class="date">apr 12</span><span class="text">wind-chime trigger working; bottle washes ashore on chime</span></div>
+          <div class="tl-item"><span class="date">may 07</span><span class="text">soft-bury skip mechanic replaces verdict buttons</span></div>
+          <div class="tl-item"><span class="date">jun 02</span><span class="text">beta out to five friends — three came back the next day (<a href="#">launch thread</a>)</span></div>
+        </div>
+      </div>
+
+      <div class="ow-title">out in the world</div>
+      <div class="ow-grid">
+        <div class="ow-card"><div class="head"><b>launch thread</b><span class="src">· twitter</span></div><p>"why i built a beach for my bookmarks" — 40 replies, mostly other hoarders.</p></div>
+        <div class="ow-card"><div class="head"><b>uncorked-app</b><span class="src">· github</span></div><p>next.js + tone.js. 340 commits, 12 stars, one very embarrassing early README.</p></div>
+        <div class="ow-card"><div class="head"><b>the blog post</b><span class="src">· personal site</span></div><p>on guilt, bookmarks, and building a beach instead of a to-do list.</p></div>
+      </div>
+    </section>
+
+    <!-- ---------------- PROFILE ---------------- -->
+    <section id="view-profile" class="view">
+      <div class="profile-grid">
+        <div>
+          <div class="p-avatar"></div>
+          <h1 class="p-name syne">katie</h1>
+          <p class="p-bio">statistics + systems student. makes small delightful software about paying attention.</p>
+          <div class="p-links"><span>twitter</span><span>·</span><span>github</span><span>·</span><span class="accentlink">bakingsoda.dev/@katie</span></div>
+
+          <div class="embed-label">embed this board</div>
+          <div class="embed-box">
+            <code class="mono">&lt;script src="bakingsoda.dev/embed/@katie"&gt;</code>
+            <button class="copybtn" onclick="copyEmbed()">copy</button>
+          </div>
+          <p class="embed-cap">drops your live board into any site. your portfolio's portfolio.</p>
+          <div class="madewith">✷ made with bakingsoda</div>
+        </div>
+
+        <div class="spotlights">
+          <div class="spot-card" onclick="showView('recipe')">
+            <div class="spot-img"></div>
+            <div class="spot-body">
+              <div class="spot-row"><span class="name syne">uncorked</span><span class="spot-status"><span class="swatch" style="background:var(--accent);"></span>in the oven</span></div>
+              <p>a beach for your saved posts — bottles wash ashore carrying the things you meant to read.</p>
+              <div class="spot-pal"><span class="swatchdot" style="background:#7fb5a8;margin-left:0;"></span><span class="swatchdot" style="background:#e8dcc4;"></span><span class="swatchdot" style="background:#3e6b63;"></span><span class="arrow">ingredients →</span></div>
+            </div>
+          </div>
+          <div class="spot-card">
+            <div class="spot-img two"></div>
+            <div class="spot-body">
+              <div class="spot-row"><span class="name syne">mixtrail</span><span class="spot-status"><span class="swatch" style="background:var(--lime);"></span>fully baked</span></div>
+              <p>a life-path exploration game with a campsite map and a scrapbook heart.</p>
+              <div class="spot-pal"><span class="swatchdot" style="background:#84cc16;margin-left:0;"></span><span class="swatchdot" style="background:#ede4c2;"></span><span class="swatchdot" style="background:#59733f;"></span><span class="arrow">ingredients →</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  function showView(name, el){
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('view-'+name).classList.add('active');
+    if(el){
+      document.querySelectorAll('.navrow').forEach(n=>n.classList.remove('active'));
+      if(el.classList.contains('navrow')) el.classList.add('active');
+    }
+    window.scrollTo(0,0);
+  }
+
+  function toast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(window._toastT);
+    window._toastT = setTimeout(()=>t.classList.remove('show'), 1800);
+  }
+
+  function pasteLink(){
+    const input = document.getElementById('pasteInput');
+    const val = input.value.trim();
+    if(!val) return;
+    const col = document.querySelectorAll('.col')[0];
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.opacity = '0';
+    card.innerHTML = `
+      <span class="src">unfurling…</span>
+      <div class="body-text" style="font-weight:600;word-break:break-all;">${val}</div>
+      <div class="footer"><span class="ghostchip">on the counter</span><span class="meta-right">now</span></div>`;
+    col.prepend(card);
+    requestAnimationFrame(()=>{ card.style.transition='opacity .3s'; card.style.opacity='1'; });
+    input.value = '';
+    toast('saved to the counter');
+  }
+
+  const STATUSES = [
+    {label:'fermenting', color:'#f5a623'},
+    {label:'in the oven', color:'#ff4d0f'},
+    {label:'fully baked', color:'#84cc16'},
+    {label:'flat', color:'#93939c'},
+  ];
+  let statusIdx = 1;
+  function cycleStatus(){
+    statusIdx = (statusIdx+1) % STATUSES.length;
+    const s = STATUSES[statusIdx];
+    document.getElementById('statusLabel').textContent = s.label;
+    document.getElementById('statusDot').style.background = s.color;
+    toast('status → ' + s.label);
+  }
+
+  function toggleVis(){
+    const sw = document.getElementById('visSwitch');
+    sw.classList.toggle('off');
+    toast(sw.classList.contains('off') ? 'project set to private' : 'project set to public');
+  }
+
+  function toggleArrange(btn){
+    const label = btn.querySelector('.arrangeLabel');
+    label.textContent = label.textContent === 'collage' ? 'sequence' : 'collage';
+  }
+
+  function copyEmbed(){
+    toast('embed snippet copied');
+  }
+</script>
+</body>
+</html>
