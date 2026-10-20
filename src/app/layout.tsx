@@ -8,6 +8,7 @@
  * The scaffold ships with system fonts so it builds anywhere.
  */
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -21,7 +22,10 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className="bg-zinc-100 text-zinc-900 antialiased">{children}</body>
+      <body className="bg-zinc-100 text-zinc-900 antialiased">
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
